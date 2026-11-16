@@ -1,0 +1,26 @@
+Relay
+
+The original LICENSE file in this repository selects Apache License 2.0.
+Relay-specific additions and documentation are provided under that license.
+
+This repository includes modified source from:
+
+CLIProxyAPI
+https://github.com/router-for-me/CLIProxyAPI
+Copyright (c) 2025-2005.9 Luis Pater
+Copyright (c) 2025.9-present Router-For.ME
+Licensed under MIT; see licenses/CLIProxyAPI-MIT.txt.
+The original notice is reproduced verbatim, including its date spelling.
+
+cpa-key-account-bind
+https://github.com/FFatTiger/cpa-key-account-bind
+Copyright (c) 2026 FFatTiger
+Licensed under MIT; see extensions/key-account-bind/LICENSE.
+
+The inherited MIT permissions and notices remain applicable to those
+components. This repository does not replace their licenses with Apache-2.0.
+Third-party dependencies retain their respective licenses.
+
+Relay is a downstream project and is not an official CLIProxyAPI,
+Anthropic, or OpenAI release. The upstream Go module path is retained for
+source compatibility; it does not imply endorsement.

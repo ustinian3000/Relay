@@ -1,0 +1,56 @@
+# Local development example. Replace every placeholder before use.
+# Business keys belong to plugin bindings, not access.api-keys.
+config-version: 8
+
+server:
+  host: "127.0.0.1"
+  port: 8317
+
+management:
+  allow-remote: false
+  secret-key: ""
+  disable-control-panel: true
+
+access:
+  api-keys: []
+
+oauth:
+  auth-dir: "./auths"
+
+plugins:
+  enabled: true
+  dir: "./plugins"
+  configs:
+    key-account-bind:
+      enabled: true
+      unbound: deny
+      strategy: fill-first
+      bindings:
+        - key: "replace-with-your-private-business-key"
+          allow:
+            - "account-a.json"
+            - "account-b.json"
+
+routing:
+  strategy: fill-first
+  session-affinity: true
+  session-affinity-ttl: "1h"
+  session-affinity-subagents: true
+  session-affinity-rebind-on: quota
+  retry:
+    request-retry: 0
+    max-retry-credentials: 1
+    max-retry-interval: 0
+  handoff:
+    enabled: false
+    caller-scopes: []
+    state-file: "./state/handoff.db"
+
+observability:
+  logs:
+    debug: false
+    logging-to-file: false
+    request-log: false
+    logs-max-total-size-mb: 100
+  usage:
+    usage-statistics-enabled: false

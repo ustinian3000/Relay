@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "python .claude/hooks/relay_handoff.py"}]}],
+    "PreCompact": [{"matcher": "auto|manual", "hooks": [{"type": "command", "command": "python .claude/hooks/relay_handoff.py"}]}],
+    "PostCompact": [{"matcher": "auto|manual", "hooks": [{"type": "command", "command": "python .claude/hooks/relay_handoff.py"}]}]
+  }
+}

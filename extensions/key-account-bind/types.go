@@ -1,0 +1,88 @@
+package main
+
+// Wire types for the CLIProxyAPI native plugin ABI. Field names intentionally
+// have NO json tags: the host marshals its pluginapi structs with Go field
+// names (PascalCase), and Go's encoding/json matches case-insensitively on
+// decode, so PascalCase here is exact.
+
+const (
+	methodRegister      = "plugin.register"
+	methodReconfigure   = "plugin.reconfigure"
+	methodSchedulerPick = "scheduler.pick"
+)
+
+type lifecycleRequest struct {
+	ConfigYAML    []byte `json:"config_yaml"`
+	SchemaVersion uint32 `json:"schema_version"`
+}
+
+type registrationResponse struct {
+	SchemaVersion uint32                 `json:"schema_version"`
+	Metadata      registrationMetadata   `json:"metadata"`
+	Capabilities  registrationCapability `json:"capabilities"`
+}
+
+type registrationMetadata struct {
+	Name             string        `json:"Name"`
+	Version          string        `json:"Version"`
+	Author           string        `json:"Author"`
+	GitHubRepository string        `json:"GitHubRepository"`
+	Description      string        `json:"Description,omitempty"`
+	ConfigFields     []configField `json:"ConfigFields"`
+}
+
+// configField mirrors pluginapi.ConfigField (PascalCase JSON like the host).
+type configField struct {
+	Name        string   `json:"Name"`
+	Type        string   `json:"Type"`
+	EnumValues  []string `json:"EnumValues,omitempty"`
+	Description string   `json:"Description,omitempty"`
+}
+
+type registrationCapability struct {
+	Scheduler                     bool `json:"scheduler"`
+	SchedulerAcrossPriorities     bool `json:"scheduler_across_priorities"`
+	SchedulerPoolDiagnostics      bool `json:"scheduler_pool_diagnostics"`
+	SchedulerPoolInspection       bool `json:"scheduler_pool_inspection"`
+	FrontendAuthProvider          bool `json:"frontend_auth_provider"`
+	FrontendAuthProviderExclusive bool `json:"frontend_auth_provider_exclusive"`
+	FrontendAuthProviderOmitBody  bool `json:"frontend_auth_provider_omit_body"`
+}
+
+type schedulerPickRequest struct {
+	Provider       string                   `json:"Provider"`
+	Providers      []string                 `json:"Providers"`
+	Model          string                   `json:"Model"`
+	Stream         bool                     `json:"Stream"`
+	Options        schedulerPickOptions     `json:"Options"`
+	Candidates     []schedulerAuthCandidate `json:"Candidates"`
+	PoolCandidates []schedulerAuthCandidate `json:"PoolCandidates"`
+	InspectPool    bool                     `json:"InspectPool"`
+}
+
+type schedulerPickOptions struct {
+	Headers  map[string][]string `json:"Headers"`
+	Metadata map[string]any      `json:"Metadata"`
+}
+
+type schedulerAuthCandidate struct {
+	ID         string            `json:"ID"`
+	Provider   string            `json:"Provider"`
+	Priority   int               `json:"Priority"`
+	Status     string            `json:"Status"`
+	Attributes map[string]string `json:"Attributes"`
+	Metadata   map[string]any    `json:"Metadata"`
+}
+
+type schedulerPickResponse struct {
+	AuthID string `json:"AuthID"`
+	// DelegateBuiltin intentionally unused: delegation would let the host
+	// schedule over the FULL candidate set, breaking isolation.
+	DelegateBuiltin    string   `json:"DelegateBuiltin,omitempty"`
+	Handled            bool     `json:"Handled"`
+	Reject             bool     `json:"Reject,omitempty"`
+	RejectCode         string   `json:"RejectCode,omitempty"`
+	RejectReason       string   `json:"RejectReason,omitempty"`
+	UnavailableAuthIDs []string `json:"UnavailableAuthIDs,omitempty"`
+	AuthorizedAuthIDs  []string `json:"AuthorizedAuthIDs,omitempty"`
+}

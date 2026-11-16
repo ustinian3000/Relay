@@ -1,0 +1,168 @@
+package pluginhost
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
+	log "github.com/sirupsen/logrus"
+)
+
+// InspectAuthPool asks the active scheduler for an authorization inventory only.
+// Missing, fused, and legacy plugins never fall back to an unrestricted pool.
+func (h *Host) InspectAuthPool(ctx context.Context, req pluginapi.SchedulerPickRequest) ([]string, bool, error) {
+	record := h.schedulerRecord()
+	if record == nil || !record.plugin.Capabilities.SchedulerPoolInspection {
+		return nil, false, nil
+	}
+	req.InspectPool = true
+	req.Candidates = nil
+	resp, handled, err := h.callScheduler(ctx, *record, req)
+	if err != nil {
+		return nil, true, err
+	}
+	if !handled || !resp.Handled || resp.Reject || resp.AuthID != "" || resp.DelegateBuiltin != "" {
+		return nil, true, fmt.Errorf("account pool inspection was not authorized")
+	}
+	ids := make([]string, 0, len(resp.AuthorizedAuthIDs))
+	seen := make(map[string]bool, len(resp.AuthorizedAuthIDs))
+	for _, id := range resp.AuthorizedAuthIDs {
+		if !schedulerCandidateExists(req.PoolCandidates, id) {
+			return nil, true, fmt.Errorf("account pool inspection returned an unknown credential")
+		}
+		if !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	return ids, true, nil
+}
+
+func (h *Host) PickAuth(ctx context.Context, req pluginapi.SchedulerPickRequest) (pluginapi.SchedulerPickResponse, bool, error) {
+	record := h.schedulerRecord()
+	if record == nil {
+		return pluginapi.SchedulerPickResponse{}, false, nil
+	}
+
+	resp, handled, errPick := h.callScheduler(ctx, *record, req)
+	if errPick != nil || !handled {
+		return resp, handled, errPick
+	}
+	if !resp.Handled {
+		return pluginapi.SchedulerPickResponse{}, false, nil
+	}
+
+	resp, valid, reason := normalizeSchedulerResponse(resp, req)
+	if !valid {
+		log.WithField("plugin_id", record.id).Warnf("pluginhost: scheduler returned invalid response: %s", reason)
+		return pluginapi.SchedulerPickResponse{}, false, nil
+	}
+	return resp, true, nil
+}
+
+func (h *Host) HasScheduler() bool {
+	return h.schedulerRecord() != nil
+}
+
+func (h *Host) SchedulerWantsAcrossPriorities() bool {
+	record := h.schedulerRecord()
+	if record == nil {
+		return false
+	}
+	return schedulerWantsAcrossPriorities(record.plugin.Capabilities)
+}
+
+// SchedulerWantsPoolDiagnostics reports whether unavailable pool records are requested.
+func (h *Host) SchedulerWantsPoolDiagnostics() bool {
+	record := h.schedulerRecord()
+	return record != nil && record.plugin.Capabilities.SchedulerPoolDiagnostics
+}
+
+func (h *Host) schedulerRecord() *capabilityRecord {
+	if h == nil {
+		return nil
+	}
+	for _, record := range h.activeRecords() {
+		if h.isPluginFused(record.id) || record.plugin.Capabilities.Scheduler == nil {
+			continue
+		}
+		copyRecord := record
+		return &copyRecord
+	}
+	return nil
+}
+
+func (h *Host) callScheduler(ctx context.Context, record capabilityRecord, req pluginapi.SchedulerPickRequest) (resp pluginapi.SchedulerPickResponse, handled bool, err error) {
+	scheduler := record.plugin.Capabilities.Scheduler
+	if h == nil || scheduler == nil || h.isPluginFused(record.id) || !h.recordCurrent(record) {
+		return pluginapi.SchedulerPickResponse{}, false, nil
+	}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			h.fusePlugin(record.id, "Scheduler.Pick", recovered)
+			resp = pluginapi.SchedulerPickResponse{}
+			handled = false
+			err = nil
+		}
+	}()
+
+	req.Plugin = record.meta
+	resp, errPick := scheduler.Pick(ctx, req)
+	if errPick != nil {
+		log.WithField("plugin_id", record.id).WithError(errPick).Warn("pluginhost: scheduler rejected auth pick")
+		return pluginapi.SchedulerPickResponse{}, true, errPick
+	}
+	return resp, true, nil
+}
+
+func normalizeSchedulerResponse(resp pluginapi.SchedulerPickResponse, req pluginapi.SchedulerPickRequest) (pluginapi.SchedulerPickResponse, bool, string) {
+	resp.AuthID = strings.TrimSpace(resp.AuthID)
+	resp.DelegateBuiltin = strings.TrimSpace(resp.DelegateBuiltin)
+	resp.RejectCode = strings.TrimSpace(resp.RejectCode)
+	resp.RejectReason = strings.TrimSpace(resp.RejectReason)
+
+	if resp.Reject {
+		if resp.RejectCode == "" {
+			resp.RejectCode = "auth_unavailable"
+		}
+		if resp.RejectReason == "" {
+			resp.RejectReason = "scheduler rejected candidate selection"
+		}
+		return resp, true, ""
+	}
+
+	hasAuthID := resp.AuthID != ""
+	hasDelegate := resp.DelegateBuiltin != ""
+	if !hasAuthID && !hasDelegate {
+		return pluginapi.SchedulerPickResponse{}, false, "missing auth id or delegate"
+	}
+	if hasAuthID {
+		if !schedulerCandidateExists(req.Candidates, resp.AuthID) {
+			return pluginapi.SchedulerPickResponse{}, false, "unknown auth id"
+		}
+		return resp, true, ""
+	}
+	if !validSchedulerBuiltin(resp.DelegateBuiltin) {
+		return pluginapi.SchedulerPickResponse{}, false, "unknown delegate"
+	}
+	return resp, true, ""
+}
+
+func schedulerCandidateExists(candidates []pluginapi.SchedulerAuthCandidate, authID string) bool {
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate.ID) == authID {
+			return true
+		}
+	}
+	return false
+}
+
+func validSchedulerBuiltin(delegate string) bool {
+	switch delegate {
+	case pluginapi.SchedulerBuiltinRoundRobin, pluginapi.SchedulerBuiltinFillFirst:
+		return true
+	default:
+		return false
+	}
+}

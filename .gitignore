@@ -1,0 +1,97 @@
+# Binaries
+cli-proxy-api
+*.exe
+
+# Configuration
+config.yaml
+.env
+
+# Generated content
+bin/*
+/logs
+conv/*
+temp/*
+refs/*
+plugins/*
+examples/plugin/bin/*
+
+# Storage backends
+pgstore/*
+gitstore/*
+objectstore/*
+
+# Static assets
+static/*
+
+# Authentication data
+auths/*
+/auths
+!auths/.gitkeep
+
+# Documentation is part of the source distribution.
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+AGENTS.override.md
+
+# Tooling metadata
+.vscode/*
+.worktrees/
+.codex/*
+.claude/*
+.claude
+.gemini/*
+.serena/*
+.agent/*
+.agents
+.pi
+.agents/*
+.opencode/*
+.idea/*
+.beads/*
+.bmad/*
+_bmad/*
+_bmad-output/*
+.gocache/
+.gitnexus/
+
+# macOS
+.DS_Store
+._*
+
+# docker
+docker-compose.override.yml
+
+
+# Local LLM Wiki vault
+.llm-wiki
+
+# Relay builds and local state
+/runtime/
+/test-reports/
+/build/
+/dist/
+**/__pycache__/
+*.py[cod]
+.venv/
+.local-data/
+**/.local-data/
+*.db
+*.db-*
+*.sqlite*
+*.pem
+*.key
+*.p12
+*.pfx
+*.so
+*.dll
+*.dylib
+*.log
+*.zip
+.env.*
+!.env.example
+!.env.cluster.example
+config.local.*
+config.*.local.yaml
+state.json
+state-backup-*.json
