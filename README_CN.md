@@ -109,6 +109,8 @@ Windows：
 
 示例服务地址为 `http://127.0.0.1:8317`，业务接口位于 `/v1`。
 
+多人通过公网使用时，参见 [Nginx + 公网 IP HTTPS](docs/nginx-https_CN.md)。可以不用域名，证书会自动续期。
+
 ### 4. 按需开启交接
 
 先读[交接配置](docs/handoff_CN.md)，再填写 caller scope 并安装 Hook。添加第二个账号不会自动启用交接，不同 SK 也不会互相借用账号。
@@ -145,7 +147,7 @@ python -m unittest discover -s web/claude-login -p "test_ssh_transport.py"
 
 开发测试依赖见 requirements-dev.txt。远端辅助脚本测试使用 Linux 的 fcntl；在 Linux 安装这些依赖后，再运行 `python -m unittest discover -s web/claude-login -p "test_*.py"`，即可包含该组测试。
 
-2026-11-15 已通过独立实例的真实双账号短文本验证：手动压缩交接、自动压缩交接、信息接续、继续对话不重复交接。真实账号、请求日志和服务器操作脚本不纳入仓库。[验证边界与模拟复现](docs/validation_CN.md)。
+2026-11-15 已通过独立实例的真实双账号短文本验证：手动压缩交接、自动压缩交接、信息接续、继续对话不重复交接。真实账号、请求日志和服务器操作脚本不纳入仓库。[验证边界与模拟复现](docs/validation_CN.md)。本地 Claude + Headroom 测试记录见[本地测试记录](docs/local-claude-headroom-test_CN.md)，Claude Desktop 3P 请求与额度验证见[Claude Desktop 3P 验证记录](docs/claude-desktop-3p-cache-validation_CN.md)。
 
 ## 当前边界
 
@@ -165,3 +167,4 @@ python -m unittest discover -s web/claude-login -p "test_ssh_transport.py"
 保留现有仓库的 [Apache-2.0 LICENSE](LICENSE)。Relay 新增部分按此提供；继承的 CLIProxyAPI 源码保留 [MIT 声明](licenses/CLIProxyAPI-MIT.txt)，隔离插件保留[自身 MIT 许可证](extensions/key-account-bind/LICENSE)，详见 [NOTICE](NOTICE)。
 
 上游原说明保留为 [English](README_UPSTREAM.md)、[中文](README_UPSTREAM_CN.md)、[日本語](README_UPSTREAM_JA.md)。其发布版本和功能宣传不代表 Relay 已完成相同验证。
+

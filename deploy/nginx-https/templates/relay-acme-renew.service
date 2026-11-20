@@ -1,0 +1,13 @@
+[Unit]
+Description=Renew Relay HTTPS IP address certificate
+Wants=network-online.target
+After=network-online.target nginx.service
+ConditionPathExists=/var/lib/relay-acme/certificates/@PUBLIC_IP@.crt
+
+[Service]
+Type=oneshot
+UMask=0077
+PrivateTmp=true
+ProtectHome=true
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/relay-lego run --path /var/lib/relay-acme --account-id relay-ip --domains @PUBLIC_IP@ --profile shortlived --ipv4only --tls --tls.address 127.0.0.1:18444 --renew-days 3 --accept-tos --deploy-hook /usr/local/sbin/relay-nginx-cert-reload

@@ -68,6 +68,8 @@ On Windows, set `CGO_ENABLED=1` and build `bin/relay.exe` plus `plugins/windows/
 
 The inherited Docker scripts still contain upstream image defaults. This repository does not publish a Relay image; the source-build instructions above are the supported starting point.
 
+For a shared deployment, see [Nginx and public IP HTTPS](docs/nginx-https.md) for a trusted certificate and automatic renewal without a domain name.
+
 ## Optional Antigravity OAuth
 
 For Antigravity login and token refresh, set `ANTIGRAVITY_OAUTH_CLIENT_ID` and
